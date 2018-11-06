@@ -16,15 +16,4 @@ COPY --from=helm /src/helm /usr/local/bin/helm
 RUN mkdir /root/.kube
 RUN curl http://jenkins.slateci.io/artifacts/slate-linux.tar.gz -O
 RUN tar xzvf slate-linux.tar.gz && chmod +x slate && mv slate /usr/bin/
-WORKDIR /opt/slate-api-server
-RUN rm -rf /src
-RUN git clone https://github.com/slateci/slate-api-server.git .
-RUN mkdir aws && cd aws && curl -LO https://github.com/aws/aws-sdk-cpp/archive/1.4.70.tar.gz && tar xzf 1.4.70.tar.gz && mkdir aws-sdk-cpp-1.4.70-build
-RUN cd aws/aws-sdk-cpp-1.4.70-build && cmake ../aws-sdk-cpp-1.4.70 -DBUILD_ONLY="dynamodb" -DBUILD_SHARED_LIBS=Off && make -j${CORES} && make install
-RUN mkdir build && cd build && cmake .. && make -j${CORES}
-RUN cd build && dd if=/dev/urandom of=encryptionKey bs=1024 count=1
-WORKDIR /opt/slate-portal
-RUN pip install virtualenv
-RUN git clone https://github.com/slateci/prototype-portal.git .
-RUN bash -c 'virtualenv venv && source venv/bin/activate && pip install --no-cache-dir -r requirements.txt'
 WORKDIR /

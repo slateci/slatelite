@@ -1,8 +1,5 @@
 version: '3.1'
 services:
-  db:
-    image: dwmkerr/dynamodb
-    restart: always
   kube:
     build:
       context: dind/
@@ -11,29 +8,23 @@ services:
     privileged: true
     cap_add:
       - ALL
+    network_mode: host
     volumes:
       - /lib/modules:/lib/modules
       - kubernetes:/etc/kubernetes
   slate:
     depends_on:
-      - db
       - kube
     build:
       context: .
-    environment:
-      - SLATE_awsEndpoint=db:8000
     restart: always
-    command: /bin/sh -c "cd /opt/slate-api-server/build && ./slate-service"
+    command: /bin/sh -c 'set -e; trap "exit 0;" TERM INT; while true; do sleep 1d; done & wait'
     stdin_open: true
     tty: true
+    network_mode: host
     volumes:
       - ./slate-config:/root/.slate
-      - ./slate_portal_user:/opt/slate-api-server/build/slate_portal_user
-      - ./slate-config/endpoint:/opt/slate-portal/slate_api_endpoint.txt
       - ./slate-config/token:/etc/slate/secrets/slate_api_token.txt
       - kubernetes:/etc/kubernetes
-    ports:
-      - 5000:5000
-      - 5100:5100
 volumes:
   kubernetes:
