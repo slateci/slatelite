@@ -23,8 +23,6 @@ services:
     tty: true
     network_mode: host
     volumes:
-      - ./slate-config:/root/.slate
-      - ./slate-config/token:/etc/slate/secrets/slate_api_token.txt
       - kubernetes:/etc/kubernetes
 volumes:
   kubernetes:
