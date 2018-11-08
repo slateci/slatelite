@@ -8,6 +8,10 @@ start() {
   docker-compose exec slate helm init --service-account tiller
 }
 
+bare() {
+  docker-compose up -d
+}
+
 pause() {
   docker-compose stop
 }
