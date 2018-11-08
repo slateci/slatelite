@@ -29,3 +29,6 @@ It removes the containers and their volumes so any data added by you is destroye
 Therefore, you will not need to wait for the build process to complete when running `minislate start` again.
 
 To force a rebuild and pull the latest versions of the software run: ./minislate build
+
+You may wish to create a node that can be joined to an existing cluster, this can be done by running `./minislate bare`.
+You should then run `./minislate shell kube` and run the `kubeadm join` command here to join the node to the cluster.
