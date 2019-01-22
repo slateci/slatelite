@@ -14,6 +14,6 @@ RUN /bin/sh -c "echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /e
 RUN apt-get update && apt-get install -y g++ cmake git libcurl4-openssl-dev zlib1g-dev libssl-dev libboost-all-dev subversion libyaml-cpp-dev python-pip kubectl && apt-get clean
 COPY --from=helm /src/helm /usr/local/bin/helm
 RUN mkdir /root/.kube
-RUN curl http://jenkins.slateci.io/artifacts/slate-linux.tar.gz -O
+RUN curl http://jenkins.slateci.io/artifacts/client/slate-linux.tar.gz -O
 RUN tar xzvf slate-linux.tar.gz && chmod +x slate && mv slate /usr/bin/
 WORKDIR /
