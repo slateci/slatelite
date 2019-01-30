@@ -2,7 +2,7 @@ version: '3.1'
 services:
   kube:
     build:
-      context: dind/
+      context: kube/
     restart: always
     tty: true
     privileged: true
@@ -12,11 +12,12 @@ services:
     volumes:
       - /lib/modules:/lib/modules
       - kubernetes:/etc/kubernetes
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
   slate:
     depends_on:
       - kube
     build:
-      context: .
+      context: slate/
     restart: always
     command: /bin/sh -c 'set -e; trap "exit 0;" TERM INT; while true; do sleep 1d; done & wait'
     stdin_open: true

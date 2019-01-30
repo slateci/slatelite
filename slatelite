@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+from pprint import pprint
+from shlex import split
+import subprocess
+import argparse
+
+parser = argparse.ArgumentParser()
+subparsers = parser.add_subparsers(title="commands", dest="c1")
+subparsers.add_parser('init', help='initialize SLATElite containers')
+subparsers.add_parser('pause', help='pause SLATElite containers')
+subparsers.add_parser('unpause', help='unpause SLATElite containers')
+subparsers.add_parser('destroy', help='completely destroy environment')
+subparsers.add_parser('status', help='view status of SLATElite containers')
+build = subparsers.add_parser('build', help='build/rebuild container images')
+build.add_argument('c2', metavar='container', nargs='?', choices=['kube','slate','db'], help='Example: `./slatelite build slate`')
+shell = subparsers.add_parser('shell', help='open a shell in a SLATElite container')
+shell.add_argument('c2', metavar='container', choices=['kube','slate','db'], help='Example: `./slatelite shell slate`')
+slate = subparsers.add_parser('slate', help='run a slate command')
+slate.add_argument('c2', metavar='command', nargs=argparse.REMAINDER, help='Example: `./slatelite slate vo list`')
+kubectl = subparsers.add_parser('kubectl', help='run a kubectl command')
+kubectl.add_argument('c2', metavar='command', nargs=argparse.REMAINDER, help='Example: `./slatelite kubectl get po --all-namespaces`')
+exec_ = subparsers.add_parser('exec', help='wrapper of "docker-compose exec"')
+exec_.add_argument('c2', metavar='command', nargs=argparse.REMAINDER, help='Example: `./slatelite exec kube ip addr`')
+args = parser.parse_args()
+
+try:
+    from subprocess import DEVNULL # py3k
+except ImportError:
+    import os
+    DEVNULL = open(os.devnull, 'wb')
+
+def initcheck(initerr='SLATElite is not initialized. Run: `./SLATElite init`'):
+  if not subprocess.check_output(split('docker-compose ps -q')):
+    raise EnvironmentError(initerr)
+def readycheck(rdyerr='SLATElite has non-ready containers. Is the environment paused?'):
+  try:
+    subprocess.check_call(split('/bin/sh -c "docker-compose ps | grep Up"'), stdout=DEVNULL, close_fds=True)
+  except subprocess.CalledProcessError:
+    raise EnvironmentError(rdyerr)
+
+def run(cmd):
+  subprocess.call(split(cmd))
+
+if args.c1 == 'init':
+  if subprocess.check_output(split('docker-compose ps -q')):
+    raise EnvironmentError('SLATElite is already initialized. Run `./SLATElite destroy && ./SLATElite init` to reset your environment.')
+  run('docker-compose up -d')
+  run('docker-compose exec kube ./init.sh')
+  run('docker-compose exec slate helm init --service-account tiller')
+elif args.c1 == 'pause':
+  initcheck()
+  readycheck(rdyerr='It appears SLATElite is already paused.')
+  run('docker-compose pause')
+elif args.c1 == 'unpause':
+  initcheck()
+  try:
+    subprocess.check_call(split('/bin/sh -c "docker-compose ps | grep Paused"'), stdout=DEVNULL, close_fds=True)
+  except subprocess.CalledProcessError:
+    raise EnvironmentError('SLATElite is not paused.')
+  run('docker-compose unpause')
+elif args.c1 == 'destroy':
+  initcheck()
+  readycheck()
+  run('docker-compose down -v')
+elif args.c1 == 'build':
+  if args.c2:
+    run('docker-compose build --no-cache '+args.c2)
+  else:
+    run('docker-compose build --no-cache')
+elif args.c1 == 'shell':
+  initcheck()
+  readycheck()
+  run('docker-compose exec '+args.c2+' /bin/bash')
+elif args.c1 == 'status':
+  initcheck()
+  run('docker-compose ps')
+elif args.c1 == 'slate':
+  initcheck()
+  readycheck()
+  c2 = ' '.join(args.c2)
+  run('docker-compose exec slate slate '+c2)
+elif args.c1 == 'kubectl':
+  initcheck()
+  readycheck()
+  c2 = ' '.join(args.c2)
+  run('docker-compose exec slate kubectl '+c2)
+elif args.c1 == 'exec':
+  initcheck()
+  readycheck()
+  c2 = ' '.join(args.c2)
+  run('docker-compose exec '+c2)
+else:
+  raise ValueError('Invalid argument: '+args.c1)
