@@ -58,6 +58,12 @@ To **completely destroy** the environment such that it can be created again run:
 
 `./slatelite build` will always pull the latest releases of the SLATE software.
 
-Note that you upon destroying and re-initializing you'll need to run `./slatelite slate cluster delete {your_cluster_name}`
-and recreate it with `./slatelite slate cluster create {your_cluster_name} --vo {vo_name}` as the destroy/re-init
-process creates an entirely new Kubernetes installation.
+Note that you upon destroying and re-initializing you'll need to run:
+
+`./slatelite slate cluster delete {your_cluster_name}`
+
+Then recreate it with:
+
+`./slatelite slate cluster create {your_cluster_name} --vo {vo_name}`
+
+This is required as the destroy/re-init process creates an entirely new Kubernetes installation.
