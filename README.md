@@ -58,7 +58,7 @@ To **completely destroy** the environment such that it can be created again run:
 
 `./slatelite build` will always pull the latest releases of the SLATE software.
 
-Note that you upon destroying and re-initializing you'll need to run:
+**NOTE** that you upon destroying and re-initializing you'll need to run:
 
 `./slatelite slate cluster delete {your_cluster_name}`
 
