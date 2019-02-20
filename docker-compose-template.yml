@@ -6,18 +6,30 @@ services:
     restart: always
     tty: true
     privileged: true
+    network_mode: host
     cap_add:
       - ALL
-    network_mode: host
     volumes:
       - /lib/modules:/lib/modules
       - kubernetes:/etc/kubernetes
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  nfs:
+    image: itsthenetwork/nfs-server-alpine
+    restart: always
+    privileged: true
+    tty: true
+    network_mode: host
+    environment:
+      - SHARED_DIRECTORY=/srv
+    volumes:
+      - nfsdata:/srv
   slate:
     depends_on:
       - kube
     build:
       context: slate/
+    environment:
+      - SLATE_allowAdHocApps=true
     restart: always
     command: /bin/sh -c 'set -e; trap "exit 0;" TERM INT; while true; do sleep 1d; done & wait'
     stdin_open: true
@@ -25,5 +37,7 @@ services:
     network_mode: host
     volumes:
       - kubernetes:/etc/kubernetes
+# {VOLUMES}
 volumes:
   kubernetes:
+  nfsdata:
