@@ -1,10 +1,10 @@
 # SLATElite
 
-This project is a trial distribution of the [SLATE project](http://slateci.io/) with a single Kubernetes node.
+This project is an evaluation distribution of the [SLATE project](http://slateci.io/) with a single Kubernetes node.
 
 This project utilizes a 'docker-in-docker' architecture. The entire environment is enclosed in Docker containers, including Kubernetes.
 
-The primary purpose of this project is to provide a trial deployment of a SLATE environment with minimal host dependencies or interference.
+The primary purpose of this project is to provide an evaluation deployment of a SLATE environment with minimal host dependencies or interference.
 
 ## Minimum Requirements
 
