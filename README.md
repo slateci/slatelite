@@ -1,69 +1,45 @@
 # SLATElite
-
-This project is an evaluation distribution of the [SLATE project](http://slateci.io/) with a single Kubernetes node.
-
-This project utilizes a 'docker-in-docker' architecture. The entire environment is enclosed in Docker containers, including Kubernetes.
-
-The primary purpose of this project is to provide an evaluation deployment of a SLATE environment with minimal host dependencies or interference.
+This project provides a local evaluation environment for the [SLATE project](http://slateci.io/).
 
 ## Minimum Requirements
+- Linux (2 cores, 4GB memory, 15GB storage) or MacOS
+- A publicly accessible IP address (port 6443 open)
+- Python (3 or 2.7, 'python' must be in your PATH)
+- [DockerCE](https://docs.docker.com/install/#supported-platforms)
+- [Docker-Compose](https://github.com/docker/compose/releases) (installed with Docker for Mac)
 
-2 cores CPU and 4GB RAM recommended for minimum reasonable performance.
+On Linux, the user running SLATElite must be a member of the Docker group (or root).
+Users can be added to the Docker group with: `sudo usermod -a -G docker <username>`
 
-At least 10GB available disk is recommended. Kubernetes will take up a few GB alone.
+## Getting Started
+After installing the dependency requirements and pulling the SLATElite repository:
 
-## Install Dependencies
+Make sure your Docker is running.
 
-### Docker CE:
+Build the container images with	`./slatelite build` 
+This will take a few minutes. Running this again is only required to pull updates to software.
 
-Docker CE on CentOS: https://docs.docker.com/install/linux/docker-ce/centos/
+Initialize the environment with `./slatelite init`
 
-Docker CE on Ubuntu: https://docs.docker.com/install/linux/docker-ce/ubuntu/
+__TIP:__ Access local directories by mapping them into the SLATE container: `./slatelite init -v ~/WorkDir:/mnt`
 
-Other Linux operating systems are in the sidebar.
+[Utilize SLATE](http://slateci.io/docs/quickstart/slate-client.html) with `./slatelite slate ...(cluster list, group list, etc)...`
 
-### Docker Compose:
-
-Use [pip](https://github.com/pypa/pip). It can be installed with your package manager or [get-pip.py](https://bootstrap.pypa.io/get-pip.py)
-
-Then run: `(sudo) pip install docker-compose`
-
-### SLATE Docker Images:
-
-Inside the project directory run: `./slatelite build`
-
-This will take a minute or so. It is pulling container dependencies and the SLATE project.
-
-## Usage
-
-Run `./slatelite init` to spin up the containers for the MiniSLATE environment and install Kubernetes.
-
-As SLATElite utilizes the live SLATE API server you will need to register your SLATElite cluster to use it.
-
-Visit [the SLATE portal](https://portal.slateci.io/cli) to get your cli setup script, copy it to your clipboard,
-then run `./slatelite shell slate` and paste in the script. Then type `exit` to return to your host shell.
-
-When the process is complete you can issue commands from the slate client in a new terminal:
-
-`./slatelite slate ...(cluster list, vo list, etc)...`
-
-You can also just get a shell in the slate container with: `./slatelite shell slate`
-
-To pause/suspend the environment run: `./slatelite pause`
-Then turn it back on with: `./slatelite unpause`
+Or shell into the container and run it "natively":
+```
+$ ./slatelite shell slate
+# slate ...(cluster list, group list, etc)...
+```
 
 To **completely destroy** the environment such that it can be created again run: `./slatelite destroy`
 
-`./slatelite build` can be run again before re-initializing the environment with `./slatelite init`
+For a more detailed description of each SLATElite command view [COMMANDS.md](https://github.com/slateci/slatelite/blob/master/COMMANDS.md)
 
-`./slatelite build` will always pull the latest releases of the SLATE software.
+## Internal Details
+SLATElite is a docker-compose orchestrated standard SLATE deployment (with a couple performance tweaks for personal machines).
 
-**NOTE** that you upon destroying and re-initializing you'll need to run:
-
-`./slatelite slate cluster delete {your_cluster_name}`
-
-Then recreate it with:
-
-`./slatelite slate cluster create {your_cluster_name} --vo {vo_name}`
-
-This is required as the destroy/re-init process creates an entirely new Kubernetes installation.
+SLATElite spins up 4 containers with docker-compose. These include:
+- [A docker-in-docker Kubernetes node](https://github.com/slateci/slatelite/blob/master/kube/Dockerfile)
+- [A SLATE management container](https://github.com/slateci/slatelite/blob/master/slate/Dockerfile)
+- [A DynamoDB container](https://hub.docker.com/r/dwmkerr/dynamodb) used by the SLATE API server
+- [A storage container simulating an NFS share](https://hub.docker.com/r/itsthenetwork/nfs-server-alpine)

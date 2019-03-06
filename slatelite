@@ -1,32 +1,36 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-
+from __future__ import print_function
 from shlex import split
 import subprocess
 import argparse
 import os
 
+KUBEVER = 'v1.13.4'
+
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(title="commands", dest="c1")
 init = subparsers.add_parser('init', help='initialize slatelite containers')
+init.add_argument('-p', '--port', '--publish', dest='ports', action='append', nargs='?',
+                  metavar='hostPort or hostPort:containerPort', help='Example: `./slatelite init -p 3000`')
 init.add_argument('-v', '--volume', dest='volumes', action='append', nargs='?',
-                  metavar='hostDir:containerDir', help='Example: `./slatelite init -v ~/workdir:/mnt`')
+                  metavar='hostDir or hostDir:containerDir', help='Example: `./slatelite init -v ~/workdir`')
 subparsers.add_parser('pause', help='pause slatelite containers')
 subparsers.add_parser('unpause', help='unpause slatelite containers')
 destroy = subparsers.add_parser('destroy', help='completely destroy environment')
 destroy.add_argument('--rmi', dest='rmi', action='store_true', help='Example: `./slatelite destroy --rmi`')
+destroy.add_argument('-y', dest='confirm', action='store_true', help='Example: `./slatelite destroy -y`')
 subparsers.add_parser('status', help='view status of slatelite containers')
 build = subparsers.add_parser('build', help='build/rebuild container images')
 build.add_argument('c2', metavar='container', nargs='?', choices=[
-                   'kube', 'slate', 'nfs'], help='Example: `./slatelite build slate`')
+                   'kube', 'slate', 'db', 'nfs'], help='Example: `./slatelite build slate`')
 shell = subparsers.add_parser(
     'shell', help='open a shell in a slatelite container')
 shell.add_argument('c2', metavar='container', choices=[
-                   'kube', 'slate', 'nfs'], help='Example: `./slatelite shell slate`')
+                   'kube', 'slate', 'db', 'nfs'], help='Example: `./slatelite shell slate`')
 slate = subparsers.add_parser('slate', help='run a slate command')
 slate.add_argument('c2', metavar='command', nargs=argparse.REMAINDER,
-                   help='Example: `./slatelite slate vo list`')
+                   help='Example: `./slatelite slate group list`')
 kubectl = subparsers.add_parser('kubectl', help='run a kubectl command')
 kubectl.add_argument('c2', metavar='command', nargs=argparse.REMAINDER,
                      help='Example: `./slatelite kubectl get po --all-namespaces`')
@@ -62,22 +66,40 @@ if args.c1 == 'init':
     if os.path.isfile('docker-compose.yml'):
         raise EnvironmentError(
             'SLATElite is already initialized. Run `./slatelite destroy && ./slatelite init` to reset your environment.')
+    print("Caching Hyperkube image")
+    run('/bin/sh -c "docker pull k8s.gcr.io/hyperkube:' + KUBEVER + ' && \
+      docker save -o kube/hyperkube.tar k8s.gcr.io/hyperkube:' + KUBEVER + '"')
+    ports = []
     volumes = []
+    if args.ports:
+        for item in args.ports:
+            ports.append('      - ' + item)
     if args.volumes:
         for item in args.volumes:
+            if ':' not in item:
+              item = item + ':/mnt/' + os.path.basename(item)
             volumes.append('      - ' + item)
+    ports = '\n'.join(ports)
     volumes = '\n'.join(volumes)
-    with open('docker-compose-template.yml', 'r') as file:
+    with open('docker-compose.yml.tmpl', 'r') as file:
         contents = file.read()
+    contents = contents.replace('# {PORTS}', ports)
     contents = contents.replace('# {VOLUMES}', volumes)
     with open('docker-compose.yml', 'w') as file:
         file.write(contents)
         file.flush()
         os.fsync(file)
+    try:
+      run('docker-compose -v')
+    except:
+      raise EnvironmentError('Could not run docker-compose. Is it installed?')
     if(run('docker-compose up -d') == 0):
-      run('docker-compose exec kube ./init.sh')
-      run('docker-compose exec slate ./init.sh')
-      print "DONE! SLATElite is now initialized."
+      try:
+        os.remove('kube/hyperkube.tar')
+      except OSError:
+        pass
+      if(run('docker-compose exec kube ./init.sh') == 0 and run('docker-compose exec slate ./init.sh') == 0):
+        print('\033[1m'+"DONE! SLATElite is now initialized."+'\033[0m')
 elif args.c1 == 'pause':
   initcheck()
   readycheck(rdyerr='It appears SLATElite is already paused.')
@@ -92,21 +114,36 @@ elif args.c1 == 'unpause':
   run('docker-compose unpause')
 elif args.c1 == 'destroy':
     initcheck()
-    run('docker-compose kill -s SIGKILL kube')
-    if args.rmi:
-      run('docker-compose down -v --rmi local')
-    else:
-      run('docker-compose down -v')
-    os.remove('docker-compose.yml')
+    try:
+        input = raw_input
+    except NameError:
+        pass
+    yes = {'yes','y','ye'}
+    choice = ''
+    if not args.confirm:
+        print("Are you sure you'd like to completely destroy your SLATElite environment? (y/N) ", end='')
+        choice = input().lower()
+    if choice in yes or args.confirm:
+        run('docker-compose kill -s SIGKILL kube')
+        if args.rmi:
+            run('docker-compose down -v --rmi local')
+        else:
+            run('docker-compose down -v')
+        try:
+            os.remove('docker-compose.yml')
+        except OSError:
+            pass
 elif args.c1 == 'build':
-    args.c2 = args.c2 or ''
-    if args.c2 == 'kube' or args.c2 == '':
-        if not os.path.isfile('kube/hyperkube.tar'):
-            print "Caching Hyperkube image"
-            run('/bin/sh -c "docker pull k8s.gcr.io/hyperkube:v1.13.0 && \
-            docker save -o kube/hyperkube.tar k8s.gcr.io/hyperkube:v1.13.0 && \
-            docker rmi k8s.gcr.io/hyperkube:v1.13.0 > /dev/null"')
-    run('docker-compose -f docker-compose-template.yml build --no-cache ' + args.c2)
+  args.c2 = args.c2 or ''
+  if args.c2 == 'kube' or args.c2 == '':
+      print("Caching Hyperkube image")
+      run('/bin/sh -c "docker pull k8s.gcr.io/hyperkube:' + KUBEVER + ' && \
+      docker save -o kube/hyperkube.tar k8s.gcr.io/hyperkube:' + KUBEVER + '"')
+  run('docker-compose -f docker-compose.yml.tmpl build --no-cache ' + args.c2)
+  try:
+      os.remove('kube/hyperkube.tar')
+  except OSError:
+      pass
 elif args.c1 == 'shell':
   initcheck()
   readycheck()
@@ -130,4 +167,5 @@ elif args.c1 == 'exec':
   c2 = ' '.join(args.c2)
   run('docker-compose exec ' + c2)
 else:
+  args.c1 = args.c1 or ''
   raise ValueError('Invalid argument: ' + args.c1)
