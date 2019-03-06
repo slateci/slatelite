@@ -38,8 +38,7 @@ For a more detailed description of each SLATElite command view [COMMANDS.md](htt
 ## Internal Details
 SLATElite is a docker-compose orchestrated standard SLATE deployment (with a couple performance tweaks for personal machines).
 
-SLATElite spins up 4 containers with docker-compose. These include:
+SLATElite spins up 3 containers with docker-compose. These include:
 - [A docker-in-docker Kubernetes node](https://github.com/slateci/slatelite/blob/master/kube/Dockerfile)
 - [A SLATE management container](https://github.com/slateci/slatelite/blob/master/slate/Dockerfile)
-- [A DynamoDB container](https://hub.docker.com/r/dwmkerr/dynamodb) used by the SLATE API server
 - [A storage container simulating an NFS share](https://hub.docker.com/r/itsthenetwork/nfs-server-alpine)
