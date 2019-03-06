@@ -1,20 +1,20 @@
 
-## MiniSLATE Commands
-A listing of all MiniSLATE subcommands and their arguments.
+## SLATElite Commands
+A listing of all SLATElite subcommands and their arguments.
 
 ### Build
 Build/rebuild container images
 ```
-$ ./minislate build [container_name]
+$ ./slatelite build [container_name]
 ```
 _Optional Argument_:
 
 __container_name__ [slate or kube] - builds a single container image as opposed to all
 
 ### Init
-Initialize minislate containers
+Initialize slatelite containers
 ```
-$ ./minislate init [-v hostDir or hostDir:containerDir] [-p hostPort or hostPort:containerPort]
+$ ./slatelite init [-v hostDir or hostDir:containerDir] [-p hostPort or hostPort:containerPort]
 ```
 _Optional Arguments_:
 
@@ -27,22 +27,22 @@ __publish__ [-p, --publish, --port] - Publish a port in the Kubernetes container
 If a single port is specified (e.g. `-p 3000`) that port will be mapped to the same port on the host.
 
 ### Status
-View status of minislate containers
+View status of slatelite containers
 ```
-$ ./minislate status
+$ ./slatelite status
       Name                     Command               State                                                                                        Ports                                                                                     
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-minislate_db_1      java -jar DynamoDBLocal.jar      Up      8000/tcp                                                                                                                                                                       
-minislate_kube_1    /bin/bash -c exec /sbin/in ...   Up      0.0.0.0:30000->30000/tcp, 0.0.0.0:30001->30001/tcp, 0.0.0.0:30002->30002/tcp ... 0.0.0.0:30100->30100/tcp, 0.0.0.0:6443->6443/tcp, 0.0.0.0:8080->80/tcp 
-minislate_nfs_1     /usr/bin/nfsd.sh                 Up                                                                                                                                                                                     
-minislate_slate_1   /usr/bin/slate-service           Up      0.0.0.0:18080->18080/tcp, 0.0.0.0:5000->5000/tcp, 0.0.0.0:5100->5100/tcp   
+slatelite_db_1      java -jar DynamoDBLocal.jar      Up      8000/tcp                                                                                                                                                                       
+slatelite_kube_1    /bin/bash -c exec /sbin/in ...   Up      0.0.0.0:30000->30000/tcp, 0.0.0.0:30001->30001/tcp, 0.0.0.0:30002->30002/tcp ... 0.0.0.0:30100->30100/tcp, 0.0.0.0:6443->6443/tcp, 0.0.0.0:8080->80/tcp 
+slatelite_nfs_1     /usr/bin/nfsd.sh                 Up                                                                                                                                                                                     
+slatelite_slate_1   /usr/bin/slate-service           Up      0.0.0.0:18080->18080/tcp, 0.0.0.0:5000->5000/tcp, 0.0.0.0:5100->5100/tcp   
 ```
 _No parameters_.
 
 ### Shell
-Open a shell in a MiniSLATE container
+Open a shell in a SLATElite container
 ```
-user@host$ ./minislate shell {container_name}
+user@host$ ./slatelite shell {container_name}
 root@container_id# 
 ```
 _Required Argument_:
@@ -52,50 +52,50 @@ __container_name__ [slate or kube] - the container to open a shell within
 ### Slate
 Run a SLATE command
 ```
-$ ./minislate slate {slate_command}
+$ ./slatelite slate {slate_command}
 ```
 _Required Argument_:
 
-__slate_command__ - A valid SLATE command (e.g. `./minislate slate vo list`)
+__slate_command__ - A valid SLATE command (e.g. `./slatelite slate vo list`)
 
 ### Destroy
-Completely destroy the MiniSLATE environment
+Completely destroy the SLATElite environment
 ```
-$ ./minislate destroy [-y] [--rmi]
+$ ./slatelite destroy [-y] [--rmi]
 ```
 _Optional Arguments_:
 
 __-y__ - Assume yes for prompt to confirm destroy
 
-__-\-rmi__ - Also remove the built images (they will be rebuilt on next `./minislate init` or manually with `./minislate build`)
+__-\-rmi__ - Also remove the built images (they will be rebuilt on next `./slatelite init` or manually with `./slatelite build`)
 
 ### Pause
-Freezes the state of the MiniSLATE environment (helpful to free up host resources or change host state (sleep, reboots, etc.)
+Freezes the state of the SLATElite environment (helpful to free up host resources or change host state (sleep, reboots, etc.)
 ```
-$ ./minislate pause
+$ ./slatelite pause
 ```
 _No Arguments_.
 
 ### Unpause
-Unfreeze the MiniSLATE environment after pausing
+Unfreeze the SLATElite environment after pausing
 ```
-$ ./minislate unpause
+$ ./slatelite unpause
 ```
 _No Arguments_.
 
 ### Kubectl
-Run a kubectl command from the host in the MiniSLATE environment
+Run a kubectl command from the host in the SLATElite environment
 ```
-$ ./minislate kubectl {kubectl_command}
+$ ./slatelite kubectl {kubectl_command}
 ```
 _Required Argument_:
 
-__kubectl_command__ - A valid kubectl command (e.g. `./minislate kubectl get nodes`)
+__kubectl_command__ - A valid kubectl command (e.g. `./slatelite kubectl get nodes`)
 
 ### Exec
 Run any command from the host in a selected container
 ```
-$ ./minislate exec {container_name} {command}
+$ ./slatelite exec {container_name} {command}
 ```
 _Required Arguments_:
 
