@@ -1,0 +1,5 @@
+cd $(dirname $0)
+SLATELITE=$(pwd -P)/slatelite
+alias slatelite='$SLATELITE'
+alias slate='$SLATELITE slate'
+alias kubectl='$SLATELITE kubectl'
