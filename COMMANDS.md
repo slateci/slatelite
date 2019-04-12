@@ -32,7 +32,6 @@ View status of slatelite containers
 $ ./slatelite status
       Name                     Command               State                                                                                        Ports                                                                                     
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-slatelite_db_1      java -jar DynamoDBLocal.jar      Up      8000/tcp                                                                                                                                                                       
 slatelite_kube_1    /bin/bash -c exec /sbin/in ...   Up      0.0.0.0:30000->30000/tcp, 0.0.0.0:30001->30001/tcp, 0.0.0.0:30002->30002/tcp ... 0.0.0.0:30100->30100/tcp, 0.0.0.0:6443->6443/tcp, 0.0.0.0:8080->80/tcp 
 slatelite_nfs_1     /usr/bin/nfsd.sh                 Up                                                                                                                                                                                     
 slatelite_slate_1   /usr/bin/slate-service           Up      0.0.0.0:18080->18080/tcp, 0.0.0.0:5000->5000/tcp, 0.0.0.0:5100->5100/tcp   
