@@ -1,5 +1,5 @@
 # SLATElite
-This project provides a local evaluation environment for the [SLATE project](http://slateci.io/).
+This project provides a lightweight "kubernetes-in-docker" cluster federated with [SLATE](http://slateci.io/).
 
 ## Minimum Requirements
 - Linux (2 cores, 4GB memory, 15GB storage) or MacOS
