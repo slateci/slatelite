@@ -13,6 +13,7 @@ services:
       - /lib/modules:/lib/modules
       - kubernetes:/etc/kubernetes
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /var/run/docker.sock:/var/run/docker.sock
   nfs:
     image: itsthenetwork/nfs-server-alpine
     restart: always
