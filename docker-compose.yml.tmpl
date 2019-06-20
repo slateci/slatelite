@@ -34,6 +34,7 @@ services:
     command: /bin/sh -c 'set -e; trap "exit 0;" TERM INT; while true; do sleep 1d; done & wait'
     stdin_open: true
     tty: true
+    privileged: true
     network_mode: host
     volumes:
       - kubernetes:/etc/kubernetes
