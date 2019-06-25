@@ -22,7 +22,6 @@ RUN echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sourc
 RUN apt-get update && apt-get install -y docker-ce kubelet=1.14.0-00 kubeadm=1.14.0-00 kubectl=1.14.0-00 && apt-get clean
 RUN curl -s https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
 RUN helm init --client-only
-RUN chmod 666 /dev/fuse
 
 COPY hyperkube.tar .
 COPY config.yaml .
