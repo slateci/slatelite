@@ -84,9 +84,9 @@ if args.c1 == 'init':
               item = item + ':/mnt/' + os.path.basename(item)
             volumes.append('      - ' + item)
     if args.apiserver:
-        if args.apiserver == 'dev':
+        if args.apiserver[0] == 'dev':
           apiendpoint = 'https://api-dev.slateci.io:18080'
-        elif args.apiserver == 'prod':
+        elif args.apiserver[0] == 'prod':
           apiendpoint = 'https://api.slateci.io:18080'
     ports = '\n'.join(ports)
     volumes = '\n'.join(volumes)
