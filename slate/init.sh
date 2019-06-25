@@ -59,7 +59,7 @@ SquidConf:
   # within kubernetes clusters. 
 IPRange: 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 EOF
-slate app install osg-frontier-squid --group $GROUPNAME --cluster $CLUSTERNAME --conf squidconfig
+slate app install osg-frontier-squid --cluster $CLUSTERNAME --group $GROUPNAME --conf squidconfig
 rm -rf squidconfig
 export CLUSTER_IP=$(kubectl get --namespace slate-group-$INITIALGROUP -o jsonpath="{.spec.clusterIP}" service osg-frontier-squid-cvmfs)
 echo "Adding CVMFS..."
