@@ -18,7 +18,6 @@ RUN yum install -y yaml-cpp-0.5.1-1.el7.2.x86_64.rpm
 
 RUN curl -s -O https://jenkins.slateci.io/artifacts/client/slate-linux.tar.gz
 RUN tar xzf slate-linux.tar.gz && chmod +x slate && mv slate /usr/bin/
-RUN chmod 666 /dev/fuse
 
 WORKDIR /
 COPY init.sh .
