@@ -15,6 +15,10 @@ init.add_argument('-p', '--port', '--publish', dest='ports', action='append', na
                   metavar='hostPort or hostPort:containerPort', help='Example: `./slatelite init -p 3000`')
 init.add_argument('-v', '--volume', dest='volumes', action='append', nargs='?',
                   metavar='hostDir or hostDir:containerDir', help='Example: `./slatelite init -v ~/workdir`')
+init.add_argument('-s', '--server', '--api', dest='apiserver', action='store', nargs=1, metavar='The API server to connect to. Either dev or prod.'
+                  help='Example: `./slatelite init -s dev` or `./slatelite init -s prod`' choioces=['dev', 'prod'])
+init.add_argument('-t', '--token', dest='token', action='store', nargs=1, metavar='Your slate access token, must match the API server -s'
+                  help='Slate access token retrieved from portal.slateci.io, Example: `./slatelite init -s dev -t C7qMTwfb4-c1yPNwCxn43fk`')
 subparsers.add_parser('pause', help='pause slatelite containers')
 subparsers.add_parser('unpause', help='unpause slatelite containers')
 destroy = subparsers.add_parser('destroy', help='completely destroy environment')
@@ -79,12 +83,19 @@ if args.c1 == 'init':
             if ':' not in item:
               item = item + ':/mnt/' + os.path.basename(item)
             volumes.append('      - ' + item)
+    if args.apiserver:
+        if args.apiserver = 'dev'
+        apiendpoint = 'https://api-dev.slateci.io:18080'
+        else args.apiserver = 'prod'
+        apiendpoint = 'https://api.slateci.io:18080'
     ports = '\n'.join(ports)
     volumes = '\n'.join(volumes)
     with open('docker-compose.yml.tmpl', 'r') as file:
         contents = file.read()
     contents = contents.replace('# {PORTS}', ports)
     contents = contents.replace('# {VOLUMES}', volumes)
+    contents = contents.replace('# {TOKEN}', args.token)
+    contents = contents.replace('# {ENDPOINT}', apiendpoint)
     with open('docker-compose.yml', 'w') as file:
         file.write(contents)
         file.flush()
