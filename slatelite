@@ -19,6 +19,10 @@ init.add_argument('-s', '--server', '--api', dest='apiserver', action='store', n
                   help='Example: `./slatelite init -s dev` or `./slatelite init -s prod`', choices=['dev', 'prod'])
 init.add_argument('-t', '--token', dest='token', action='store', nargs=1, metavar='Your slate access token, must match the API server -s',
                   help='Slate access token retrieved from portal.slateci.io, Example: `./slatelite init -s dev -t C7qMTwfb4-c1yPNwCxn43fk`')
+init.add_argument('-c', '--cluster', '--clustername', dest='cluster', action='store', nargs=1, metavar='The name of your slatelite cluster',
+                  help='The name you want for your slatelite cluster ')
+init.add_argument('-g', '--group', '--slategroup', dest='group', action='store', nargs=1, metavar='The SLATE group to register the cluster under',
+                  help='The SLATE group name to register your cluster with')
 subparsers.add_parser('pause', help='pause slatelite containers')
 subparsers.add_parser('unpause', help='unpause slatelite containers')
 destroy = subparsers.add_parser('destroy', help='completely destroy environment')
@@ -91,12 +95,16 @@ if args.c1 == 'init':
     ports = '\n'.join(ports)
     volumes = '\n'.join(volumes)
     token = args.token[0]
+    clustergroup = args.group[0]
+    clustername = args.clustername[0]
     with open('docker-compose.yml.tmpl', 'r') as file:
         contents = file.read()
     contents = contents.replace('# {PORTS}', ports)
     contents = contents.replace('# {VOLUMES}', volumes)
     contents = contents.replace('# {TOKEN}', token)
     contents = contents.replace('# {ENDPOINT}', apiendpoint)
+    contents = contents.replace('# {CLUSTERNAME}', clustername)
+    contents = contents.replace('# {CLUSTERGROUP}', clustergroup)
     with open('docker-compose.yml', 'w') as file:
         file.write(contents)
         file.flush()
