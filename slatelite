@@ -85,9 +85,9 @@ if args.c1 == 'init':
             volumes.append('      - ' + item)
     if args.apiserver:
         if args.apiserver == 'dev':
-        apiendpoint = 'https://api-dev.slateci.io:18080'
+          apiendpoint = 'https://api-dev.slateci.io:18080'
         else args.apiserver == 'prod':
-        apiendpoint = 'https://api.slateci.io:18080'
+          apiendpoint = 'https://api.slateci.io:18080'
     ports = '\n'.join(ports)
     volumes = '\n'.join(volumes)
     with open('docker-compose.yml.tmpl', 'r') as file:
