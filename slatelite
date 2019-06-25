@@ -90,11 +90,12 @@ if args.c1 == 'init':
           apiendpoint = 'https://api.slateci.io:18080'
     ports = '\n'.join(ports)
     volumes = '\n'.join(volumes)
+    token = args.token.get()
     with open('docker-compose.yml.tmpl', 'r') as file:
         contents = file.read()
     contents = contents.replace('# {PORTS}', ports)
     contents = contents.replace('# {VOLUMES}', volumes)
-    contents = contents.replace('# {TOKEN}', args.token)
+    contents = contents.replace('# {TOKEN}', token)
     contents = contents.replace('# {ENDPOINT}', apiendpoint)
     with open('docker-compose.yml', 'w') as file:
         file.write(contents)
