@@ -86,7 +86,7 @@ if args.c1 == 'init':
     if args.apiserver:
         if args.apiserver == 'dev':
           apiendpoint = 'https://api-dev.slateci.io:18080'
-        else args.apiserver == 'prod':
+        elif args.apiserver == 'prod':
           apiendpoint = 'https://api.slateci.io:18080'
     ports = '\n'.join(ports)
     volumes = '\n'.join(volumes)
