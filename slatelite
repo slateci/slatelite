@@ -19,7 +19,7 @@ init.add_argument('-s', '--server', '--api', dest='apiserver', action='store', n
                   help='Example: `./slatelite init -s dev` or `./slatelite init -s prod`', choices=['dev', 'prod'])
 init.add_argument('-t', '--token', dest='token', action='store', nargs=1, metavar='Your slate access token, must match the API server -s',
                   help='Slate access token retrieved from portal.slateci.io, Example: `./slatelite init -s dev -t C7qMTwfb4-c1yPNwCxn43fk`')
-init.add_argument('-c', '--cluster', '--clustername', dest='cluster', action='store', nargs=1, metavar='The name of your slatelite cluster',
+init.add_argument('-c', '--cluster', '--clustername', dest='clustername', action='store', nargs=1, metavar='The name of your slatelite cluster',
                   help='The name you want for your slatelite cluster ')
 init.add_argument('-g', '--group', '--slategroup', dest='group', action='store', nargs=1, metavar='The SLATE group to register the cluster under',
                   help='The SLATE group name to register your cluster with')
