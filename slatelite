@@ -104,10 +104,14 @@ if args.c1 == 'init':
         contents = file.read()
     contents = contents.replace('# {PORTS}', ports)
     contents = contents.replace('# {VOLUMES}', volumes)
-    contents = contents.replace('# {TOKEN}', token)
-    contents = contents.replace('# {ENDPOINT}', apiendpoint)
-    contents = contents.replace('# {CLUSTERNAME}', clustername)
-    contents = contents.replace('# {CLUSTERGROUP}', clustergroup)
+    if args.token:
+      contents = contents.replace('# {TOKEN}', token)
+    if args.apiserver:
+      contents = contents.replace('# {ENDPOINT}', apiendpoint)
+    if args.clustername:
+      contents = contents.replace('# {CLUSTERNAME}', clustername)
+    if args.group:
+      contents = contents.replace('# {CLUSTERGROUP}', clustergroup)
     with open('docker-compose.yml', 'w') as file:
         file.write(contents)
         file.flush()
