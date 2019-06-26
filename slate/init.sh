@@ -8,7 +8,7 @@ echo $TOKEN > "$HOME/.slate/token"
 chmod 600 "$HOME/.slate/token"
 echo $ENDPOINT > "$HOME/.slate/endpoint"
 
-echo "Joining Slate Cluster..."
+echo "Joining to SLATE..."
 
 slate cluster create $CLUSTERNAME --group $CLUSTERGROUP --org dev -y
 
