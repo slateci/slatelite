@@ -26,6 +26,30 @@ __publish__ [-p, --publish, --port] - Publish a port in the Kubernetes container
 
 If a single port is specified (e.g. `-p 3000`) that port will be mapped to the same port on the host.
 
+__clustername__ [-c, --cluster, --clustername] - Specify the desired SLATE cluster name, and attempt to automatically join the federation. This is required for CVMFS.
+
+If the cluster join is successful CVMFS will be automatically deployed.
+
+You must specify a valid cluster name, slate group, slate token, and API endpoint for this to work.
+
+__slategroup__ [-g, --group, --slategroup] - Specify the desired SLATE group, and attempt to automatically join the federation. This is required for CVMFS.
+
+If the cluster join is successful CVMFS will be automatically deployed.
+
+You must specify a valid cluster name, slate group, slate token, and API endpoint for this to work.
+
+__token__ [-t, --token] - Specify your slate join token, and attempt to automatically join the federation. This is required for CVMFS. The token must match the API endpoint.
+
+If the cluster join is successful CVMFS will be automatically deployed.
+
+You must specify a valid cluster name, slate group, slate token, and API endpoint for this to work.
+
+__api__ [-s, --server, --api] - Specify your slate API endpoint, and attempt to automatically join the federation. This is required for CVMFS. The token must match the API endpoint.
+
+If the cluster join is successful CVMFS will be automatically deployed.
+
+You must specify a valid cluster name, slate group, slate token, and API endpoint for this to work.
+
 ### Status
 View status of slatelite containers
 ```
