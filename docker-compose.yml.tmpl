@@ -30,6 +30,10 @@ services:
       context: slate/
     environment:
       - SLATE_allowAdHocApps=true
+      - TOKEN=# {TOKEN}
+      - ENDPOINT=# {ENDPOINT}
+      - CLUSTERNAME=# {CLUSTERNAME}
+      - CLUSTERGROUP=# {CLUSTERGROUP}
     restart: always
     command: /bin/sh -c 'set -e; trap "exit 0;" TERM INT; while true; do sleep 1d; done & wait'
     stdin_open: true
