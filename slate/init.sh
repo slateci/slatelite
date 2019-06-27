@@ -4,8 +4,20 @@ helm init --service-account tiller
 kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
 helm install --namespace kube-system --set nfs.server=127.0.0.1 --set nfs.path=/ --set storageClass.defaultClass=true stable/nfs-client-provisioner
 
-if [-z "$CLUSTERNAME"]; then
-  echo "No cluster name provided...did not join federation"
+if [[ $CLUSTERNAME == "# {CLUSTERNAME}" ]]; then
+  echo "No slate cluster name provided...did not join federation"
+  exit 1
+fi
+if [[ $CLUSTERGROUP == "# {CLUSTERGROUP}" ]]; then
+  echo "No slate group provided...did not join federation"
+  exit 1
+fi
+if [[ $TOKEN == "# {TOKEN}" ]]; then
+  echo "No token provided...did not join federation"
+  exit 1
+fi
+if [[ $ENDPOINT == "# {ENDPOINT}" ]]; then
+  echo "No endpoint provided...did not join federation"
   exit 1
 fi
 
