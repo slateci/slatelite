@@ -3,6 +3,12 @@ set -e
 helm init --service-account tiller
 kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
 helm install --namespace kube-system --set nfs.server=127.0.0.1 --set nfs.path=/ --set storageClass.defaultClass=true stable/nfs-client-provisioner
+
+if [-z "$CLUSTERNAME"]; then
+  echo "No cluster name provided...did not join federation"
+  exit 1
+fi
+
 mkdir -p -m 0700 "$HOME/.slate"
 echo $TOKEN > "$HOME/.slate/token"
 chmod 600 "$HOME/.slate/token"
