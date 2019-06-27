@@ -16,7 +16,7 @@ init.add_argument('-p', '--port', '--publish', dest='ports', action='append', na
 init.add_argument('-v', '--volume', dest='volumes', action='append', nargs='?',
                   metavar='hostDir or hostDir:containerDir', help='Example: `./slatelite init -v ~/workdir`')
 init.add_argument('-s', '--server', '--api', dest='apiserver', action='store', nargs=1, metavar='The API server to connect to. Either dev or prod.',
-                  help='Example: `./slatelite init -s dev` or `./slatelite init -s prod`', choices=['dev', 'prod'])
+                  help='Example: `./slatelite init -s dev` or `./slatelite init -s prod`')
 init.add_argument('-t', '--token', dest='token', action='store', nargs=1, metavar='Your slate access token, must match the API server -s',
                   help='Slate access token retrieved from portal.slateci.io, Example: `./slatelite init -s dev -t C7qMTwfb4-c1yPNwCxn43fk`')
 init.add_argument('-c', '--cluster', '--clustername', dest='clustername', action='store', nargs=1, metavar='The name of your slatelite cluster',
@@ -92,6 +92,8 @@ if args.c1 == 'init':
           apiendpoint = 'https://api-dev.slateci.io:18080'
         elif args.apiserver[0] == 'prod':
           apiendpoint = 'https://api.slateci.io:18080'
+        else:
+          apiendpoint = args.apiserver[0]
     ports = '\n'.join(ports)
     volumes = '\n'.join(volumes)
     if args.token:
