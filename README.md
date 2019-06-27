@@ -44,7 +44,7 @@ To get your access token go to https://portal.slateci.io/cli (Note: this token i
 
 When choosing a cluster name be sure the name doesn't already belong to another cluster. You can do this through the SLATE Client (Download: https://portal.slateci.io/cli).
 
-`./slatelite init --cluster <DESIRED CLUSTER NAME> --token <YOUR ACCESS TOKEN> --group <YOUR SLATE GROUP> --api <Either dev or prod>`
+`./slatelite init --cluster <DESIRED CLUSTER NAME> --token <ACCESS TOKEN> --group <SLATE GROUP> --api <dev or prod>`
 
 Example:
 
