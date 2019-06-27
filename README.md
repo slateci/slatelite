@@ -40,7 +40,7 @@ If you need CVMFS for your environment you must supply your desired SLATE cluste
 
 You can setup a group at https://portal.slateci.io/groups
 
-To get your access token go to https://portal.slateci.io/cli (Note: this token is for the prod API endpoint by default)
+To get your access token go to https://portal.slateci.io/cli (Note: this token is for the 'prod' API endpoint by default)
 
 When choosing a cluster name be sure the name doesn't already belong to another cluster. You can do this through the SLATE Client (Download: https://portal.slateci.io/cli).
 
