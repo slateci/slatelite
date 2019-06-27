@@ -35,6 +35,25 @@ To **completely destroy** the environment such that it can be created again run:
 
 For a more detailed description of each SLATElite command view [COMMANDS.md](https://github.com/slateci/slatelite/blob/master/COMMANDS.md)
 
+## Deploying with CVMFS
+If you need CVMFS for your environment you must supply your desired SLATE cluster name, a SLATE group that you are a member of, a valid SLATE access token, and the API endpoint you wish to connect to. 
+
+You can setup a group at https://portal.slateci.io/groups
+
+To get your access token go to https://portal.slateci.io/cli (Note: this token is for the prod API endpoint by default)
+
+When choosing a cluster name be sure the name doesn't already belong to another cluster. You can do this through the SLATE Client (Download: https://portal.slateci.io/cli).
+
+`./slatelite init --cluster <DESIRED CLUSTER NAME> --token <YOUR ACCESS TOKEN> --group <YOUR SLATE GROUP> --api <Either dev or prod>`
+
+Example:
+
+`./slatelite init --cluster my-cluster --group my-group --token 6mG2gTvDhgMWitF_bAy7aP --api dev`
+
+You can manually specify an API endpoint address as well (Not reccomended).
+
+`--api https://api-dev.slateci.io:18080`
+
 ## Internal Details
 SLATElite is a docker-compose orchestrated standard SLATE deployment (with a couple performance tweaks for personal machines).
 
@@ -42,3 +61,7 @@ SLATElite spins up 3 containers with docker-compose. These include:
 - [A docker-in-docker Kubernetes node](https://github.com/slateci/slatelite/blob/master/kube/Dockerfile)
 - [A SLATE management container](https://github.com/slateci/slatelite/blob/master/slate/Dockerfile)
 - [A storage container simulating an NFS share](https://hub.docker.com/r/itsthenetwork/nfs-server-alpine)
+
+## Known issues
+
+If you have a kubernetes cluster running directly on the host you wish to run Slatelite, this is known to cause odd interactions. (i.e. Kubelet/Kubadm/Kubectl is installed on the machine)
