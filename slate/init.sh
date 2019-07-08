@@ -28,7 +28,7 @@ echo $ENDPOINT > "$HOME/.slate/endpoint"
 
 echo "Joining to SLATE..."
 
-slate cluster create $CLUSTERNAME --group $CLUSTERGROUP --org dev -y
+slate cluster create $CLUSTERNAME --group $CLUSTERGROUP --org SLATE -y --no-ingress
 
 echo "Deploying squid proxy instance..."
 
