@@ -1,8 +1,5 @@
 #!/bin/bash
 set -e
-helm init --service-account tiller
-kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
-helm install --namespace kube-system --set nfs.server=127.0.0.1 --set nfs.path=/ --set storageClass.defaultClass=true stable/nfs-client-provisioner
 
 if [[ $CLUSTERNAME == "# {CLUSTERNAME}" ]]; then
   echo "No slate cluster name provided...did not join federation"
