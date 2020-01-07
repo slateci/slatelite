@@ -9,7 +9,8 @@ COPY slate-server.repo /etc/yum.repos.d/slate-server.repo
 RUN yum install -y ca-certificates git vim which kubectl boost zlib openssl libcurl openssl
 RUN yum clean all && rm -rf /var/cache/yum
 
-RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+RUN curl -LO https://get.helm.sh/helm-v3.0.2-linux-arm64.tar.gz
+RUN tar -xzf helm-v3.0.2-linux-arm64.tar.gz && mv linux-arm64/helm /usr/local/bin/helm
 
 RUN mkdir /root/.kube
 
