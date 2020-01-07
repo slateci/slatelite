@@ -13,6 +13,16 @@ services:
       - /lib/modules:/lib/modules
       - kubernetes:/etc/kubernetes
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  nfs:
+    image: itsthenetwork/nfs-server-alpine
+    restart: always
+    privileged: true
+    tty: true
+    network_mode: host
+    environment:
+      - SHARED_DIRECTORY=/srv
+    volumes:
+      - nfsdata:/srv
   slate:
     depends_on:
       - kube
