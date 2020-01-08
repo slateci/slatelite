@@ -1,4 +1,4 @@
-FROM centos:7
+FROM arm64v8/centos:latest
 
 ENV KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
