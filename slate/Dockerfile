@@ -1,6 +1,6 @@
 FROM arm64v8/centos:latest
 
-ENV KUBECONFIG=/etc/kubernetes/k3s.yaml
+ENV KUBECONFIG=/etc/k3s.yaml
 
 WORKDIR /src
 
