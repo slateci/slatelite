@@ -1,4 +1,5 @@
 #!/bin/bash
+cp /etc/rancher/k3s/k3s.yaml /etc/kubernetes/k3s.yaml
 kubectl config set clusters.default.server https://kube:6443
 set -e
 
