@@ -74,9 +74,6 @@ if args.c1 == 'init':
     if os.path.isfile('docker-compose.yml'):
         raise EnvironmentError(
             'SLATElite is already initialized. Run `./slatelite destroy && ./slatelite init` to reset your environment.')
-    print("Caching Hyperkube image")
-    run('/bin/sh -c "docker pull k8s.gcr.io/hyperkube:' + KUBEVER + ' && \
-      docker save -o kube/hyperkube.tar k8s.gcr.io/hyperkube:' + KUBEVER + '"')
     ports = []
     volumes = []
     if args.ports:
@@ -123,10 +120,6 @@ if args.c1 == 'init':
     except:
       raise EnvironmentError('Could not run docker-compose. Is it installed?')
     if(run('docker-compose up -d') == 0):
-      try:
-        os.remove('kube/hyperkube.tar')
-      except OSError:
-        pass
       if(run('docker-compose exec slate ./init.sh') == 0):
         print('\033[1m'+"DONE! SLATElite is now initialized."+'\033[0m')
 elif args.c1 == 'pause':
