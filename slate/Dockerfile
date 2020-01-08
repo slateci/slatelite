@@ -17,7 +17,7 @@ RUN mkdir /root/.kube
 RUN curl -s -O https://dl.fedoraproject.org/pub/epel/7/aarch64/Packages/y/yaml-cpp-0.5.1-2.el7.aarch64.rpm
 RUN yum install -y yaml-cpp-0.5.1-2.el7.aarch64.rpm
 
-RUN yum install -y gcc-c++ openssl-devel libcurl-devel zlib-devel epel-release cmake3 boost-devel yaml-cpp-devel
+RUN yum install -y gcc-c++ openssl-devel libcurl-devel zlib-devel epel-release && yum install -y cmake3 boost-devel yaml-cpp-devel
 RUN git clone https://github.com/slateci/slate-client-server.git
 WORKDIR /src/slate-client-server
 RUN mkdir build
