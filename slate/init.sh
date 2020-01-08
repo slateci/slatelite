@@ -1,4 +1,5 @@
 #!/bin/bash
+kubectl config set clusters.default.server https://kube:6443
 set -e
 
 if [[ $CLUSTERNAME == "# {CLUSTERNAME}" ]]; then
