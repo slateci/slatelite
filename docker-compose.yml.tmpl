@@ -29,6 +29,10 @@ services:
     volumes:
       - kubernetes:/etc/rancher
 # {VOLUMES}
+    ports:
+      - 5000:5000
+      - 5100:5100
+      - 18080:18080
 volumes:
   kubernetes:
   nfsdata:
