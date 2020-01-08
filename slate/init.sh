@@ -1,10 +1,4 @@
 #!/bin/bash
-echo Waiting for SLATE server
-for i in 1 2 3 4 5 6 7 8 
-do
-   sleep 4
-   echo "..."
-done
 kubectl config set clusters.default.server https://kube:6443
 set -e
 
