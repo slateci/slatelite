@@ -16,8 +16,7 @@ services:
   slate:
     depends_on:
       - kube
-    build:
-      context: slate/
+    image: slateci/slatelite
     environment:
       - SLATE_allowAdHocApps=true
       - TOKEN=# {TOKEN}
