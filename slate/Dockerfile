@@ -17,8 +17,15 @@ RUN mkdir /root/.kube
 RUN curl -s -O https://dl.fedoraproject.org/pub/epel/7/aarch64/Packages/y/yaml-cpp-0.5.1-2.el7.aarch64.rpm
 RUN yum install -y yaml-cpp-0.5.1-2.el7.aarch64.rpm
 
-RUN curl -s -O https://jenkins.slateci.io/artifacts/client/slate-linux.tar.gz
-RUN tar xzf slate-linux.tar.gz && chmod +x slate && mv slate /usr/bin/
+RUN yum install -y gcc-c++ openssl-devel libcurl-devel zlib-devel epel-release cmake3 boost-devel yaml-cpp-devel
+RUN git clone https://github.com/slateci/slate-client-server.git
+WORKDIR /src/slate-client-server
+RUN mkdir build
+WORKDIR /src/slate-client-server/build
+RUN cmake3 .. -DBUILD_CLIENT=True -DBUILD_SERVER=False -DBUILD_SERVER_TESTS=False
+RUN make
+RUN mv slate /usr/bin/slate
+
 
 WORKDIR /
 COPY init.sh .
