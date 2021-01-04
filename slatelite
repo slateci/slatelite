@@ -120,7 +120,7 @@ if args.c1 == 'init':
     except:
       raise EnvironmentError('Could not run docker-compose. Is it installed?')
     if(run('docker-compose up -d') == 0):
-      if(run('docker-compose exec kube ./init.sh') == 0 and run('docker-compose exec slate ./init.sh') == 0):
+      if(run('docker-compose exec slate ./init.sh') == 0):
         print('\033[1m'+"DONE! SLATElite is now initialized."+'\033[0m')
 elif args.c1 == 'pause':
   initcheck()
