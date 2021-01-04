@@ -1,28 +1,18 @@
 version: '3.1'
 services:
   kube:
-    build:
-      context: kube/
+    image: rancher/k3s:v1.19.5-k3s1-amd64
     restart: always
     tty: true
     privileged: true
-    network_mode: host
-    cap_add:
-      - ALL
+    command: server --https-listen-port 6443 --kube-apiserver-arg service-node-port-range=30000-30100
     volumes:
       - /lib/modules:/lib/modules
-      - kubernetes:/etc/kubernetes
+      - kubernetes:/etc/rancher
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
-  nfs:
-    image: itsthenetwork/nfs-server-alpine
-    restart: always
-    privileged: true
-    tty: true
-    network_mode: host
-    environment:
-      - SHARED_DIRECTORY=/srv
-    volumes:
-      - nfsdata:/srv
+    ports:
+      - 30000-30100:30000-30100
+# {PORTS}
   slate:
     depends_on:
       - kube
@@ -38,10 +28,13 @@ services:
     command: /bin/sh -c 'set -e; trap "exit 0;" TERM INT; while true; do sleep 1d; done & wait'
     stdin_open: true
     tty: true
-    network_mode: host
     volumes:
-      - kubernetes:/etc/kubernetes
+      - kubernetes:/etc/rancher
 # {VOLUMES}
+    ports:
+      - 5000:5000
+      - 5100:5100
+      - 18080:18080
 volumes:
   kubernetes:
   nfsdata:
