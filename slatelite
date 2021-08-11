@@ -1,185 +1,455 @@
 #!/usr/bin/env python
-
-from __future__ import print_function
-from shlex import split
+import pathlib
+import shutil
+import sys
 import subprocess
 import argparse
 import os
+import time
+
+from enum import Enum
+from typing import Optional, Dict, List, Any
 
 KUBEVER = 'v1.14.0'
 
-parser = argparse.ArgumentParser()
-subparsers = parser.add_subparsers(title="commands", dest="c1")
-init = subparsers.add_parser('init', help='initialize slatelite containers')
-init.add_argument('-p', '--port', '--publish', dest='ports', action='append', nargs='?',
-                  metavar='hostPort or hostPort:containerPort', help='Example: `./slatelite init -p 3000`')
-init.add_argument('-v', '--volume', dest='volumes', action='append', nargs='?',
-                  metavar='hostDir or hostDir:containerDir', help='Example: `./slatelite init -v ~/workdir`')
-init.add_argument('-s', '--server', '--api', dest='apiserver', action='store', nargs=1, metavar='The API server to connect to. Either dev or prod.',
-                  help='Example: `./slatelite init -s dev` or `./slatelite init -s prod`')
-init.add_argument('-t', '--token', dest='token', action='store', nargs=1, metavar='Your slate access token, must match the API server -s',
-                  help='Slate access token retrieved from portal.slateci.io, Example: `./slatelite init -s dev -t C7qMTwfb4-c1yPNwCxn43fk`')
-init.add_argument('-c', '--cluster', '--clustername', dest='clustername', action='store', nargs=1, metavar='The name of your slatelite cluster',
-                  help='The name you want for your slatelite cluster ')
-init.add_argument('-g', '--group', '--slategroup', dest='group', action='store', nargs=1, metavar='The SLATE group to register the cluster under',
-                  help='The SLATE group name to register your cluster with')
-subparsers.add_parser('pause', help='pause slatelite containers')
-subparsers.add_parser('unpause', help='unpause slatelite containers')
-destroy = subparsers.add_parser('destroy', help='completely destroy environment')
-destroy.add_argument('--rmi', dest='rmi', action='store_true', help='Example: `./slatelite destroy --rmi`')
-destroy.add_argument('-y', dest='confirm', action='store_true', help='Example: `./slatelite destroy -y`')
-subparsers.add_parser('status', help='view status of slatelite containers')
-build = subparsers.add_parser('build', help='build/rebuild container images')
-build.add_argument('c2', metavar='container', nargs='?', choices=[
-                   'kube', 'slate', 'db', 'nfs'], help='Example: `./slatelite build slate`')
-shell = subparsers.add_parser(
-    'shell', help='open a shell in a slatelite container')
-shell.add_argument('c2', metavar='container', choices=[
-                   'kube', 'slate', 'db', 'nfs'], help='Example: `./slatelite shell slate`')
-slate = subparsers.add_parser('slate', help='run a slate command')
-slate.add_argument('c2', metavar='command', nargs=argparse.REMAINDER,
-                   help='Example: `./slatelite slate group list`')
-kubectl = subparsers.add_parser('kubectl', help='run a kubectl command')
-kubectl.add_argument('c2', metavar='command', nargs=argparse.REMAINDER,
-                     help='Example: `./slatelite kubectl get po --all-namespaces`')
-exec_ = subparsers.add_parser('exec', help='wrapper of "docker-compose exec"')
-exec_.add_argument('c2', metavar='command', nargs=argparse.REMAINDER,
-                   help='Example: `./slatelite exec kube ip addr`')
-args = parser.parse_args()
 
-try:
-  from subprocess import DEVNULL  # py3k
-except ImportError:
-    DEVNULL = open(os.devnull, 'wb')
+class ProviderType(Enum):
+  """
+  Enum class to define virtualization provider types
+  """
+  DOCKER = 0
+  PODMAN = 1
 
 
-def initcheck(initerr='SLATElite is not initialized. Run: `./slatelite init`'):
+class VirtProvider:
+  """
+  Class to handle virtualization provider usage
+  """
+
+  def __init__(self):
+    """
+    Initialize object
+    """
+    self.provider_type, self.provider_compose_path, self.provider_path = self.get_provider()
+
+  @staticmethod
+  def get_provider() -> (ProviderType, pathlib.Path, pathlib.Path):
+    """
+    Get virtualization provider and binary location
+    :return: tuple with provider type and path to provider binary
+    """
+    if shutil.which('docker-compose'):
+      return ProviderType.DOCKER, \
+             pathlib.Path(shutil.which('docker-compose')), \
+             pathlib.Path(shutil.which('docker'))
+    elif shutil.which('podman-compose'):
+      return ProviderType.PODMAN, \
+             pathlib.Path(shutil.which('podman-compose')), \
+             pathlib.Path(shutil.which('podman'))
+    else:
+      raise Exception("Can't get virtualization provider type")
+
+  def compose(self, args) -> Optional[str]:
+    """
+    Run a given compose command
+    :param args: arguments to compose command
+    :return: Output of compose command or None if any error occurred
+    """
+    try:
+      # print([str(self.provider_compose_path)] + args)
+      # run returns bytes or str and that confuses type checking
+      return subprocess.run([str(self.provider_compose_path)] + args,  # type: ignore
+                            stdout=subprocess.PIPE,
+                            check=True,
+                            text=True).stdout
+    except subprocess.CalledProcessError:
+      sys.stderr.write(f"Can't run {self.provider_compose_path} with given args\n")
+      return None
+
+  def run(self, args) -> Optional[str]:
+    """
+    Run podman or docker build with given arguments
+    :param args: args to pass to podman or docker
+    :return: Output of compose command or None if any error occurred
+    """
+    try:
+      # print([self.provider_path] + args)
+      return subprocess.run([self.provider_path] + args,  # type: ignore
+                            stdout=subprocess.PIPE,
+                            check=True,
+                            text=True).stdout
+    except subprocess.CalledProcessError:
+      sys.stderr.write(f"Can't run {self.provider_path} with given args\n")
+      return None
+
+  def interactive(self, container: str) -> None:
+    """
+    Run inside specified container interactively
+    :param container: container name (e.g. slate)
+    :return: None
+    """
+    if self.provider_type == ProviderType.DOCKER:
+      subprocess.call([self.provider_compose_path, 'exec', container, '/bin/sh'])
+    elif self.provider_type == ProviderType.PODMAN:
+      container_info = self.get_status()
+      container_id = [x['CONTAINER_ID'] for x in container_info if container in x['IMAGE']]
+      if len(container_id) == 0:
+        sys.stderr.write(f"Can't find specified container: {container}\n")
+        sys.exit(1)
+      subprocess.call([self.provider_path, 'exec', '-it', container_id[0], '/bin/sh'])
+
+  def exec(self, container: str, args: List[Any]) -> int:
+    """
+    Run a command inside specified container
+
+    :param container: container name (e.g. slate)
+    :param args: arguments to pass to command in container
+    :return: None
+    """
+    if self.provider_type == ProviderType.DOCKER:
+      # print([self.provider_compose_path, 'exec', container] + args)
+      subprocess.call([self.provider_compose_path, 'exec', container] + args)
+    elif self.provider_type == ProviderType.PODMAN:
+      container_info = self.get_status()
+      container_id = [x['CONTAINER_ID'] for x in container_info if container in x['IMAGE']]
+      if len(container_id) == 0:
+        sys.stderr.write(f"Can't find specified container: {container}\n")
+        sys.exit(1)
+      return subprocess.call([self.provider_path, 'exec', container_id[0]] + args)
+
+  @staticmethod
+  def split_fields_podman(line: str, header_line: str) -> Optional[Dict[str, str]]:
+    """
+    Split output from ps command output into list
+
+    :param line: line of output from docker or podman ps
+    :param header_line: line with column names from ps output
+    :return: list with line split into components
+    """
+    field_indices = []
+    if line == header_line:
+      return None
+    # get the indices associated with each field
+    field_names = ['CONTAINER ID', 'IMAGE', 'COMMAND', 'CREATED', 'STATUS', 'PORTS', 'NAMES']
+    for col in field_names:
+      cur_idx = header_line.find(col)
+      if cur_idx == -1:
+        return None
+      field_indices.append(cur_idx)
+    field_indices.append(-1)
+    if len(line) < field_indices[-2]:
+      # invalid line since it's length is less than we expect
+      return None
+    fields = {}
+    field_names[0] = 'CONTAINER_ID'
+    # use the field indices to process the input line
+    for index in range(len(field_names)):
+      field = line[field_indices[index]:field_indices[index + 1]].strip()
+      fields[field_names[index]] = field
+    return fields
+
+  @staticmethod
+  def split_fields_docker(line: str, header_line: str) -> Optional[Dict[str, str]]:
+    """
+    Split output from ps command output into list
+
+    :param line: line of output from docker or podman ps
+    :param header_line: line with column names from ps output
+    :return: dict with line split into components
+    """
+    if line == header_line:
+      return None
+    # docker-compose centers some field names but not others
+    # so assume fields are separated by a double empty space
+    fields = [x.strip() for x in line.split('  ') if x != '']
+    if len(fields) != 4:
+      return None
+    fields = {'CONTAINER_ID': fields[0],
+              'COMMAND': fields[1],
+              'STATUS': fields[2],
+              'PORTS': fields[3]}
+    return fields
+
+  def get_status(self) -> List[Dict[str, str]]:
+    """
+    Return list with information on containers that minislate has created
+    :return: List with Dictionary containing container info
+    """
+    output = self.compose(['ps'])
+    if not output:
+      return []
+    if self.provider_type == ProviderType.PODMAN:
+      header_line = [x for x in output.split("\n") if x.startswith('CONTAINER')][0]
+      container_info = [self.split_fields_podman(x, header_line) for x in output.split("\n")]
+    elif self.provider_type == ProviderType.DOCKER:
+      header_line = [x for x in output.split("\n") if 'Name' in x][0]
+      container_info = [self.split_fields_docker(x, header_line) for x in output.split("\n")]
+    else:
+      sys.stderr.write(f"Provider {self.provider_type} not supported\n")
+      sys.exit(1)
+    return [x for x in container_info if x]  # filter out entries with None
+
+
+def init_check(initerr='SLATElite is not initialized. Run: `./slatelite init`') -> bool:
     if not os.path.isfile('docker-compose.yml'):
         raise EnvironmentError(initerr)
+    return True
 
 
-def readycheck(rdyerr='SLATElite has non-ready containers. Is the environment paused?'):
-  try:
-    subprocess.check_call(split(
-        '/bin/sh -c "docker-compose ps | grep Up"'), stdout=DEVNULL, close_fds=True)
-  except subprocess.CalledProcessError:
-    raise EnvironmentError(rdyerr)
+def ready_check(provider: VirtProvider, ready_error: str = None) -> None:
+  """
+  Check to make sure all slate containers are up and ready
+
+  :param ready_error: error message to print
+  :param provider: Provider object with information on system to use
+  :return:
+  """
+  if not ready_error:
+    ready_error = 'MiniSLATE has non-ready containers. Is the environment paused?'
+
+  output = provider.get_status()
+  non_ready = [x for x in output if not x['STATUS'].lower().startswith('up')]
+  if len(non_ready) != 0:
+    raise EnvironmentError(ready_error)
 
 
-def run(cmd):
-  return subprocess.call(split(cmd))
+def create_arg_parsers() -> argparse.ArgumentParser:
+  """
+  Create and setup argument parsers
+  :return: argument parser that can be used to parse minislate commands
+  """
+  parser = argparse.ArgumentParser()
+  subparsers = parser.add_subparsers(title="commands", dest="c1")
+  init = subparsers.add_parser('init', help='initialize slatelite containers')
+  init.add_argument('-p', '--port', '--publish', dest='ports', action='append', nargs='?',
+                    metavar='hostPort or hostPort:containerPort', help='Example: `./slatelite init -p 3000`')
+  init.add_argument('-v', '--volume', dest='volumes', action='append', nargs='?',
+                    metavar='hostDir or hostDir:containerDir', help='Example: `./slatelite init -v ~/workdir`')
+  init.add_argument('-s', '--server', '--api', dest='apiserver', action='store', nargs=1,
+                    metavar='The API server to connect to. Either dev or prod.',
+                    help='Example: `./slatelite init -s dev` or `./slatelite init -s prod`')
+  init.add_argument('-t', '--token', dest='token', action='store', nargs=1,
+                    metavar='Your slate access token, must match the API server -s',
+                    help='Slate access token retrieved from portal.slateci.io, '
+                         'Example: `./slatelite init -s dev -t C7qMTwfb4-c1yPNwCxn43fk`')
+  init.add_argument('-c', '--cluster', '--clustername', dest='clustername', action='store', nargs=1,
+                    metavar='The name of your slatelite cluster',
+                    help='The name you want for your slatelite cluster ')
+  init.add_argument('-g', '--group', '--slategroup', dest='group', action='store', nargs=1,
+                    metavar='The SLATE group to register the cluster under',
+                    help='The SLATE group name to register your cluster with')
+  subparsers.add_parser('pause', help='pause slatelite containers')
+  subparsers.add_parser('unpause', help='unpause slatelite containers')
+  destroy = subparsers.add_parser('destroy', help='completely destroy environment')
+  destroy.add_argument('--rmi', dest='rmi', action='store_true', help='Example: `./slatelite destroy --rmi`')
+  destroy.add_argument('-y', dest='confirm', action='store_true', help='Example: `./slatelite destroy -y`')
+  subparsers.add_parser('status', help='view status of slatelite containers')
+  build = subparsers.add_parser('build', help='build/rebuild container images')
+  build.add_argument('c2', metavar='container', nargs='?', choices=[
+    'kube', 'slate', 'db', 'nfs'], help='Example: `./slatelite build slate`')
+  shell = subparsers.add_parser(
+    'shell', help='open a shell in a slatelite container')
+  shell.add_argument('c2', metavar='container', choices=[
+    'kube', 'slate', 'db', 'nfs'], help='Example: `./slatelite shell slate`')
+  slate = subparsers.add_parser('slate', help='run a slate command')
+  slate.add_argument('c2', metavar='command', nargs=argparse.REMAINDER,
+                     help='Example: `./slatelite slate group list`')
+  kubectl = subparsers.add_parser('kubectl', help='run a kubectl command')
+  kubectl.add_argument('c2', metavar='command', nargs=argparse.REMAINDER,
+                       help='Example: `./slatelite kubectl get po --all-namespaces`')
+  exec_ = subparsers.add_parser('exec', help='wrapper of "docker-compose exec"')
+  exec_.add_argument('c2', metavar='command', nargs=argparse.REMAINDER,
+                     help='Example: `./slatelite exec kube ip addr`')
+  return parser
 
 
-if args.c1 == 'init':
-    if os.path.isfile('docker-compose.yml'):
-        raise EnvironmentError(
-            'SLATElite is already initialized. Run `./slatelite destroy && ./slatelite init` to reset your environment.')
-    ports = []
-    volumes = []
-    if args.ports:
-        for item in args.ports:
-            ports.append('      - ' + item)
-    if args.volumes:
-        for item in args.volumes:
-            if ':' not in item:
-              item = item + ':/mnt/' + os.path.basename(item)
-            volumes.append('      - ' + item)
-    if args.apiserver:
-        if args.apiserver[0] == 'dev':
-          apiendpoint = 'https://api-dev.slateci.io:18080'
-        elif args.apiserver[0] == 'prod':
-          apiendpoint = 'https://api.slateci.io:18080'
-        else:
-          apiendpoint = args.apiserver[0]
-    ports = '\n'.join(ports)
-    volumes = '\n'.join(volumes)
-    if args.token:
-      token = args.token[0]
-    if args.group:
-      clustergroup = args.group[0]
-    if args.clustername:
-      clustername = args.clustername[0]
-    with open('docker-compose.yml.tmpl', 'r') as file:
-        contents = file.read()
-    contents = contents.replace('# {PORTS}', ports)
-    contents = contents.replace('# {VOLUMES}', volumes)
-    if args.token:
-      contents = contents.replace('# {TOKEN}', token)
-    if args.apiserver:
-      contents = contents.replace('# {ENDPOINT}', apiendpoint)
-    if args.clustername:
-      contents = contents.replace('# {CLUSTERNAME}', clustername)
-    if args.group:
-      contents = contents.replace('# {CLUSTERGROUP}', clustergroup)
-    with open('docker-compose.yml', 'w') as file:
-        file.write(contents)
-        file.flush()
-        os.fsync(file)
-    try:
-      run('docker-compose -v')
-    except:
-      raise EnvironmentError('Could not run docker-compose. Is it installed?')
-    if(run('docker-compose up -d') == 0):
-      if(run('docker-compose exec slate ./init.sh') == 0):
-        print('\033[1m'+"DONE! SLATElite is now initialized."+'\033[0m')
-elif args.c1 == 'pause':
-  initcheck()
-  readycheck(rdyerr='It appears SLATElite is already paused.')
-  run('docker-compose pause')
-elif args.c1 == 'unpause':
-  initcheck()
-  try:
-    subprocess.check_call(split(
-        '/bin/sh -c "docker-compose ps | grep Paused"'), stdout=DEVNULL, close_fds=True)
-  except subprocess.CalledProcessError:
+def init_slatelite(args: argparse.Namespace, provider: VirtProvider) -> None:
+  """
+  Initialize slatelite cluster
+
+  :param args: parsed arguments
+  :param provider: Provider object with information on system to use
+  :return: None
+  """
+  if os.path.isfile('docker-compose.yml'):
+    raise EnvironmentError('SLATElite is already initialized. Run '
+                           '`./slatelite destroy && ./slatelite init` to reset your environment.')
+  ports = []
+  volumes = []
+  if args.ports:
+      for port in args.ports:
+          ports.append('      - ' + port)
+  if args.volumes:
+      for volume in args.volumes:
+          if ':' not in volume:
+            volume = volume + ':/mnt/' + os.path.basename(volume)
+          volumes.append('      - ' + volume)
+  ports = '\n'.join(ports)
+  volumes = '\n'.join(volumes)
+
+  with open('docker-compose.yml.tmpl', 'r') as file:
+      contents = file.read()
+  contents = contents.replace('# {PORTS}', ports)
+  contents = contents.replace('# {VOLUMES}', volumes)
+  if args.token:
+    contents = contents.replace('# {TOKEN}', args.token[0])
+  if args.apiserver:
+    if args.apiserver[0] == 'dev':
+      api_endpoint = 'https://api-dev.slateci.io:18080'
+    elif args.apiserver[0] == 'prod':
+      api_endpoint = 'https://api.slateci.io:18080'
+    else:
+      api_endpoint = args.apiserver[0]
+    contents = contents.replace('# {ENDPOINT}', api_endpoint)
+  if args.clustername:
+    contents = contents.replace('# {CLUSTERNAME}', args.clustername[0])
+  if args.group:
+    contents = contents.replace('# {CLUSTERGROUP}', args.group[0])
+  with open('docker-compose.yml', 'w') as file:
+      file.write(contents)
+      file.flush()
+      os.fsync(file)
+  if provider.compose(['up', '-d']) is not None:
+      print("Initializing slate components, this may take a while...")
+      if provider.compose(['exec', '-T', 'slate', './init.sh']) is not None:
+          if volumes:
+              print('\033[1m' + "Volume Mounts:" + '\033[0m' + '\n' + volumes)
+          print('\n' + '\033[1m' + "DONE! MiniSLATE is now initialized." + '\033[0m')
+      else:
+        destroy_slatelite(args, provider)
+  else:
+    destroy_slatelite(args, provider)
+
+
+def pause_slatelite(provider: VirtProvider) -> None:
+  """
+  Pause the slatelite instance
+
+  :param provider: Provider object with information on system to use
+  :return: None
+  """
+  if provider.provider_type == ProviderType.PODMAN:
+    provider.run(['pods', 'pause', 'slatelite'])
+  elif provider.provider_type == ProviderType.DOCKER:
+    container_info = provider.get_status()
+    container_ids = [x['CONTAINER_ID'] for x in container_info]
+    for container_id in container_ids:
+      provider.run(['pause', container_id])
+
+
+def unpause_slatelite(provider: VirtProvider) -> None:
+  """
+  Unpause the slatelite instance
+
+  :param provider: Provider object with information on system to use
+  :return: None
+  """
+  container_info = provider.get_status()
+
+  paused = [x['CONTAINER_ID'] for x in container_info if
+            x['STATUS'].lower() == 'paused']  # type: ignore # noqa: E501
+  if len(paused) == 0:
     raise EnvironmentError('SLATElite is not paused.')
-  run('docker-compose unpause')
-elif args.c1 == 'destroy':
-    initcheck()
+  if provider.provider_type == ProviderType.PODMAN:
+    provider.run(['pods', 'unpause', 'slatelite'])
+  elif provider.provider_type == ProviderType.DOCKER:
+    for container_id in paused:
+      provider.run(['unpause', container_id])
+
+
+def destroy_slatelite(args: argparse.Namespace, provider: VirtProvider) -> None:
+  """
+  Destroy the slatelite instance
+
+  :param args: parsed args
+  :param provider: Provider object with information on system to use
+  :return: None
+  """
+  yes = {'yes', 'y', 'ye'}
+  choice = ''
+  if not args.confirm:
+    print("Are you sure you'd like to completely destroy your SLATElite environment? (y/N) ",
+          end='')
+    choice = input().lower()
+  if choice in yes or args.confirm:
+    if provider.provider_type == ProviderType.PODMAN:
+      provider.run(['pod', 'down', 'slatelite'])
+      sys.stdout.write("Waiting for slatelite pod to stop")
+      time.sleep(10)
+      provider.run(['pod', 'kill', 'slatelite'])
+    elif provider.provider_type == ProviderType.DOCKER:
+      provider.compose(['stop', 'kube'])
+      if args.rmi:
+        provider.compose(['down', '-v', '--rmi', 'all'])
+      else:
+        provider.compose(['down', '-v'])
     try:
-        input = raw_input
-    except NameError:
-        pass
-    yes = {'yes','y','ye'}
-    choice = ''
-    if not args.confirm:
-        print("Are you sure you'd like to completely destroy your SLATElite environment? (y/N) ", end='')
-        choice = input().lower()
-    if choice in yes or args.confirm:
-        run('docker-compose kill -s SIGKILL kube')
-        if args.rmi:
-            run('docker-compose down -v --rmi local')
-        else:
-            run('docker-compose down -v')
-        try:
-            os.remove('docker-compose.yml')
-        except OSError:
-            pass
-elif args.c1 == 'build':
-  args.c2 = args.c2 or ''
-  run('docker-compose -f docker-compose.yml.tmpl build --no-cache ' + args.c2)
-elif args.c1 == 'shell':
-  initcheck()
-  readycheck()
-  run('docker-compose exec ' + args.c2 + ' /bin/bash')
-elif args.c1 == 'status':
-  initcheck()
-  run('docker-compose ps')
-elif args.c1 == 'slate':
-  initcheck()
-  readycheck()
-  c2 = ' '.join(args.c2)
-  run('docker-compose exec slate slate ' + c2)
-elif args.c1 == 'kubectl':
-  initcheck()
-  readycheck()
-  c2 = ' '.join(args.c2)
-  run('docker-compose exec slate kubectl ' + c2)
-elif args.c1 == 'exec':
-  initcheck()
-  readycheck()
-  c2 = ' '.join(args.c2)
-  run('docker-compose exec ' + c2)
-else:
-  args.c1 = args.c1 or ''
-  raise ValueError('Invalid argument: ' + args.c1)
+      os.remove('docker-compose.yml')
+    except OSError:
+      pass
+
+
+def build_slatelite(args: argparse.Namespace, provider: VirtProvider) -> None:
+  """
+  Build slatelite images for use
+
+  :param args: parsed arguments
+  :param provider: Provider object with information on system to use
+  :return: None
+  """
+  args.subcommand = args.subcommand or ''
+  print('WARNING Building locally can take more than 15 minutes')
+  print('It is recommended to use hosted images by running ./slatelite init')
+  print('Building the slate container...')
+  provider.compose(['-f', 'docker-compose.yml.tmpl', 'build', '--no-cache'] + args.subcommand)
+  print('SLATElite slate container built successfully')
+
+
+def run_main():
+  parser = create_arg_parsers()
+  args = parser.parse_args()
+  provider = VirtProvider()
+
+  if args.command not in ["init", "build", "test"]:
+    # test for initialization if we're running a command
+    # some commands need to run before init, hence the check above
+    init_check()
+
+  if args.c1 == 'init':
+    init_slatelite(args, provider)
+  elif args.c1 == 'pause':
+    ready_check(provider, ready_error='It appears MiniSLATE is already paused.')
+    pause_slatelite(provider)
+  elif args.c1 == 'unpause':
+    unpause_slatelite(provider)
+  elif args.c1 == 'destroy':
+    destroy_slatelite(args, provider)
+  elif args.c1 == 'build':
+    # don't want init
+    build_slatelite(args, provider)
+  elif args.c1 == 'shell':
+    ready_check(provider)
+    provider.interactive(args.subcommand)
+  elif args.c1 == 'status':
+    output = provider.compose(['ps'])
+    if not output:
+      print("Could not get status")
+      sys.exit(1)
+    output = [x for x in output.split("\n") if len(x) > 70]
+    print("\n".join(output))
+  elif args.c1 == 'slate':
+    ready_check(provider)
+    provider.exec('slate', ['slate'] + args.subcommand)
+  elif args.c1 == 'kubectl':
+    ready_check(provider)
+    provider.exec('k3s', ['kubectl'] + args.subcommand)
+  elif args.c1 == 'exec':
+    ready_check(provider)
+    provider.exec(args.subcommand[0], args.subcommand[1:])
+  else:
+    args.c1 = args.c1 or ''
+    raise ValueError('Invalid argument: ' + args.c1)
+
+if __name__ == "__main__":
+  # sys.excepthook = exception_handler
+  run_main()
